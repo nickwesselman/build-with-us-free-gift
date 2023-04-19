@@ -8,18 +8,21 @@ extension_points = [
 [capabilities]
 api_access = true
 
-# [[metafields]]
-# namespace = "my-namespace"
-# key = "my-key"
+[settings]
+  [[settings.fields]]
+  key = "banner_title"
+  type = "single_line_text_field"
+  name = "Banner title"
+  description = "Enter a title for the banner"
 
-# [[metafields]]
-# namespace = "my-namespace"
-# key = "my-key-2"
+  [[settings.fields]]
+  key = "offer_product"
+  type = "variant_reference"
+  name = "Offered product"
+  description = "Select the product that will be offered"
 
-# Read more on extension settings at https://shopify.dev/api/checkout-extensions/checkout/configuration
-# [settings]
-#   [[settings.fields]]
-#   key = "banner_title"
-#   type = "single_line_text_field"
-#   name = "Banner title"
-#   description = "Enter a title for the banner"
+  [[settings.fields]]
+  key = "free_product"
+  type = "variant_reference"
+  name = "Free product"
+  description = "Select the free product that will added. (Note: You must also configure the related discount.)"

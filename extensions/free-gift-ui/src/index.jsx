@@ -15,6 +15,7 @@ import {
   useApplyCartLinesChange,
   useApplyAttributeChange,
   useExtensionApi,
+  useSettings,
 } from "@shopify/checkout-ui-extensions-react";
 
 // Set up the entry point for the extension
@@ -24,7 +25,8 @@ render("Checkout::Dynamic::Render", () => <App />);
 function App() {
   // Use `query` for fetching product data from the Storefront API, and use `i18n` to format
   // currencies, numbers, and translate strings
-  const { query, i18n } = useExtensionApi();
+  const { query, i18n} = useExtensionApi();
+
   // Get a reference to the functions that will apply changes to the cart from the imported hooks
   const applyCartLinesChange = useApplyCartLinesChange();
   const applyAttributeChange = useApplyAttributeChange();
@@ -34,6 +36,12 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(false);
   const [showError, setShowError] = useState(false);
+
+  const { banner_title, offer_product, free_product } = useSettings();
+
+  if (!offer_product || !free_product) {
+    return null;
+  }
 
   // On initial load, fetch the product variants
   useEffect(() => {
@@ -63,8 +71,8 @@ function App() {
       }`,
       {
         variables: {
-          offeredProductId: "gid://shopify/ProductVariant/44983224303906",
-          freeProductId: "gid://shopify/ProductVariant/44983223451938"
+          offeredProductId: offer_product,
+          freeProductId: free_product
         },
       },
     )
@@ -93,7 +101,7 @@ function App() {
     return (
       <BlockStack spacing="loose">
         <Divider />
-        <Heading level={2}>Add to your cart to get a free gift!</Heading>
+        <Heading level={2}>{banner_title}</Heading>
         <BlockStack spacing="loose">
           <InlineLayout
             spacing="base"
@@ -136,7 +144,7 @@ function App() {
   return (
     <BlockStack spacing="loose">
       <Divider />
-      <Heading level={2}>Add to your cart to get a free gift!</Heading>
+      <Heading level={2}>{banner_title}</Heading>
       <BlockStack spacing="loose">
         <InlineLayout
           spacing="base"
