@@ -1,0 +1,4 @@
+projects:
+    free-gift-discount:
+        documents: extensions/free-gift-discount/input.graphql
+        schema: extensions/free-gift-discount/schema.graphql

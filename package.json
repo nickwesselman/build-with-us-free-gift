@@ -15,6 +15,8 @@
     "@shopify/app": "^3.45.1",
     "@shopify/checkout-ui-extensions-react": "^0.23.0",
     "@shopify/cli": "^3.45.1",
+    "@shopify/shopify_function": "^0.0.3",
+    "javy": "^0.1.0",
     "react": "^17.0.2"
   },
   "author": "nickwesselman"

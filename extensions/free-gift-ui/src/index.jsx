@@ -181,7 +181,7 @@ function App() {
                 }),
                 await applyAttributeChange({
                   type: "updateAttribute",
-                  key: "__upsellPromo",
+                  key: "__IsUpsellPromo",
                   value: "true"
                 }),
               ]);

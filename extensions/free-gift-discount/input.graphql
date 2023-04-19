@@ -1,0 +1,20 @@
+query Input {
+  cart {
+    isUpsellPromo: attribute(key: "__IsUpsellPromo") {
+      value
+    }
+    lines {
+      merchandise {
+        __typename
+        ... on ProductVariant {
+          id
+        }
+      }
+    }
+  }
+  discountNode {
+    metafield(namespace: "$app:free-gift-discount", key: "function-configuration") {
+      value
+    }
+  }
+}
