@@ -13,7 +13,9 @@
   },
   "dependencies": {
     "@shopify/app": "3.39.0",
-    "@shopify/cli": "3.39.0"
+    "@shopify/checkout-ui-extensions-react": "^0.23.0",
+    "@shopify/cli": "3.39.0",
+    "react": "^17.0.2"
   },
   "author": "nickwesselman"
 }
