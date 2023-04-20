@@ -78,8 +78,8 @@ function App() {
       }`,
       {
         variables: {
-          offeredProductId: offeredProductId,
-          freeProductId: freeProductId
+          offeredProductId,
+          freeProductId
         },
       },
     )
