@@ -7,5 +7,5 @@ command = ""
 path = "dist/function.wasm"
 
 [ui.paths]
-create = "/"
-details = "/"
+create = "/free-gift/:functionId/new"
+details = "/free-gift/:functionId/:id"

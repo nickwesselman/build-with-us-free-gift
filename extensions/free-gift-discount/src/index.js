@@ -21,9 +21,20 @@ export default /**
  * @returns {FunctionResult}
  */
 (input) => {
-  // const configuration = JSON.parse(
-  //   input?.discountNode?.metafield?.value ?? "{}"
-  // );
+  /**
+    * @type {{
+    *   offeredProductId: string
+    *   freeProductId: string
+    * }}
+  */
+  const configuration = JSON.parse(
+    input?.discountNode?.metafield?.value ?? "{}"
+  );
+
+  if (!configuration.offeredProductId || !configuration.freeProductId) {
+    console.error('No offer configuration');
+    return EMPTY_DISCOUNT;
+  }
 
   // upsell has not been applied to the cart
   if (input.cart.isUpsellPromo?.value !== 'true') {
@@ -35,13 +46,12 @@ export default /**
     * @param {CartLines} lines
     * @param {string} id
     */
-   (lines, id) =>
-    lines
+   (lines, id) => lines
       .filter((line) => line.merchandise.__typename == 'ProductVariant' && line.merchandise.id == id)
       .map((line) => /** @type {ProductVariant} */ (line.merchandise))[0];
 
-  const offeredProduct = getMerchandiseWithId(input.cart.lines, 'gid://shopify/ProductVariant/44983224303906');
-  const freeProduct = getMerchandiseWithId(input.cart.lines, 'gid://shopify/ProductVariant/44983223451938');
+  const offeredProduct = getMerchandiseWithId(input.cart.lines, configuration.offeredProductId);
+  const freeProduct = getMerchandiseWithId(input.cart.lines, configuration.freeProductId);
 
   // required products are not in the cart
   if (!offeredProduct || !freeProduct) {
