@@ -56,7 +56,6 @@ export default function DiscountNew() {
       usageOncePerCustomer,
       startDate,
       endDate,
-      configuration,
     },
     submit,
     submitting,

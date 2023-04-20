@@ -19,7 +19,6 @@ import {
 } from "@shopify/discount-app-components";
 import {
   Banner,
-  Card,
   Layout,
   Page,
   TextField,
@@ -28,9 +27,12 @@ import {
   Spinner,
   Modal,
   TextContainer,
+  AlphaCard,
+  VerticalStack,
 } from "@shopify/polaris";
 
-import metafields from "../../../../metafields";
+import { VariantPicker } from "../../../components/VariantPicker";
+import metafields, { shopMetafield } from "../../../../metafields";
 import { useAuthenticatedFetch, useDiscount } from "../../../hooks";
 
 const todaysDate = new Date();
@@ -43,6 +45,8 @@ export default function DiscountNew() {
   const { id } = useParams();
   const { discount, isLoading } = useDiscount(id);
   const [deleteModalActive, setDeleteModalActive] = useState(false);
+  const [offeredProductId, setOfferedProductId] = useState(null);
+  const [freeProductId, setFreeProductId] = useState(null);
 
   const {
     fields: {
@@ -84,13 +88,20 @@ export default function DiscountNew() {
       usageOncePerCustomer: useField(discount?.appliesOncePerCustomer || false),
       startDate: useField(discount?.startsAt || todaysDate),
       endDate: useField(discount?.endsAt || null),
-      configuration: {
-        discountPercentage: useField(discount?.configuration?.discountPercentage || "0"),
-        qualifyingProductTotal: useField(discount?.configuration?.qualifyingProductTotal || "25"),
-        qualifyingProductTag: useField(discount?.configuration?.qualifyingProductTags?.[0] || "vip"),
-      },
     },
     onSubmit: async (form) => {
+      if (!offeredProductId || !freeProductId) {
+        return { status: "fail", errors: [{
+          message: "You must select an offered product and a free product."
+        }]};
+      }
+
+      if (offeredProductId == freeProductId) {
+        return { status: "fail", errors: [{
+          message: "Offered product and free product must be different."
+        }]};
+      }
+
       const updatedDiscount = {
         combinesWith: form.combinesWith,
         startsAt: form.startDate,
@@ -102,13 +113,32 @@ export default function DiscountNew() {
             key: metafields.key,
             type: "json",
             value: JSON.stringify({
-              discountPercentage: parseFloat(form.configuration.discountPercentage),
-              qualifyingProductTotal: parseFloat(form.configuration.qualifyingProductTotal),
-              qualifyingProductTags: [form.configuration.qualifyingProductTag],
+              offeredProductId,
+              freeProductId,
             }),
           },
         ],
       };
+
+      let shopInfo = await (await authenticatedFetch("/api/shop")).json();
+      let shopMetafieldRequest = authenticatedFetch("/api/metafields/set", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          metafields: [
+            {
+              ownerId: shopInfo.data.shop.id,
+              namespace: shopMetafield.namespace,
+              key: shopMetafield.key,
+              value: JSON.stringify({
+                offeredProductId,
+                freeProductId
+              }),
+              type: "json"
+            }
+          ],
+        }),
+      });
 
       let uri = `/api/discounts/`;
       if (form.discountMethod === DiscountMethod.Code) {
@@ -124,18 +154,19 @@ export default function DiscountNew() {
         updatedDiscount.title = form.discountTitle;
       }
 
-      let response = await authenticatedFetch(uri + id, {
+      let discountRequest = authenticatedFetch(uri + id, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ discount: updatedDiscount }),
       });
 
-      const {
-        errors, // errors like missing scope access
-        data,
-      } = await response.json();
-
-      const remoteErrors = errors || data?.discountUpdate?.userErrors;
+      const responses = await Promise.all([discountRequest, shopMetafieldRequest])
+        .then((results) => Promise.all(results.map((res) => res.json())));
+      
+      // check for any errors or user errors
+      const errors = responses.flatMap((res) => res.errors);
+      const userErrors = responses.flatMap((res) => res.data?.discountCreate?.userErrors ?? res.data?.metafieldsSet?.userErrors);
+      const remoteErrors = (errors || userErrors).filter(Boolean);
 
       if (remoteErrors?.length > 0) {
         return { status: "fail", errors: remoteErrors };
@@ -150,6 +181,7 @@ export default function DiscountNew() {
   });
 
   const handleDeleteDiscount = async () => {
+    // TODO: Clear the shop metafield as well
     await authenticatedFetch(
       `/api/discounts/${
         discountMethod.value === DiscountMethod.Automatic ? "automatic" : "code"
@@ -195,7 +227,6 @@ export default function DiscountNew() {
       primaryAction={{
         content: "Save",
         onAction: submit,
-        disabled: !dirty,
         loading: submitting,
       }}
     >
@@ -213,31 +244,18 @@ export default function DiscountNew() {
           <Layout.Section>
             <form onSubmit={submit}>
               <MethodCard
-                title="VIP"
+                title="Free Gift"
                 discountTitle={discountTitle}
                 discountClass={DiscountClass.Product}
                 discountCode={discountCode}
                 discountMethod={discountMethod}
               />
-              <Card title="VIP">
-                <Card.Section>
-                  <Stack>
-                    <TextField
-                      label="VIP Product Tag"
-                      {...configuration.qualifyingProductTag}
-                    />
-                    <TextField
-                      label="Minimum purchase total"
-                      {...configuration.qualifyingProductTotal}
-                    />
-                    <TextField
-                      label="Discount percentage"
-                      {...configuration.discountPercentage}
-                      suffix="%"
-                    />
-                  </Stack>
-                </Card.Section>
-              </Card>
+              <AlphaCard title="Gift">
+                <VerticalStack>
+                  <VariantPicker title="Offered Product" onSelection={setOfferedProductId} />
+                  <VariantPicker title="Free Product" onSelection={setFreeProductId} />
+                </VerticalStack>
+              </AlphaCard>
               {discountMethod.value === DiscountMethod.Code && (
                 <UsageLimitsCard
                   totalUsageLimit={usageTotalLimit}
@@ -296,7 +314,6 @@ export default function DiscountNew() {
               primaryAction={{
                 content: "Save discount",
                 onAction: submit,
-                disabled: !dirty,
                 loading: submitting,
               }}
               secondaryActions={[
