@@ -16,6 +16,7 @@ import {
   useApplyAttributeChange,
   useExtensionApi,
   useSettings,
+  useAppMetafields,
 } from "@shopify/checkout-ui-extensions-react";
 
 // Set up the entry point for the extension
@@ -37,16 +38,22 @@ function App() {
   const [adding, setAdding] = useState(false);
   const [showError, setShowError] = useState(false);
 
-  const { banner_title, offer_product, free_product } = useSettings();
+  const bannerTitle = useSettings()?.banner_title || 'Free Gift';
 
-  if (!offer_product || !free_product) {
-    return null;
-  }
+  // read products to display from shop metafield
+  const appMetafields = useAppMetafields();
+  const { offeredProductId, freeProductId } = appMetafields
+    .filter((appMetafield) => appMetafield.metafield.namespace == 'free-gift' && appMetafield.metafield.key == 'products')
+    .map((appMetafield) => JSON.parse(appMetafield.metafield.value))[0] ?? {};
 
   // On initial load, fetch the product variants
   useEffect(() => {
     // Set the loading state to show some UI if you're waiting
     setLoading(true);
+
+    if (!offeredProductId || !freeProductId) {
+      return;
+    }
 
     // Use `query` api method to send graphql queries to the Storefront API
     query(
@@ -71,8 +78,8 @@ function App() {
       }`,
       {
         variables: {
-          offeredProductId: offer_product,
-          freeProductId: free_product
+          offeredProductId: offeredProductId,
+          freeProductId: freeProductId
         },
       },
     )
@@ -82,7 +89,7 @@ function App() {
     })
     .catch((error) => console.error(error))
     .finally(() => setLoading(false));
-  }, []);
+  }, [offeredProductId, freeProductId]);
 
   // If an offer is added and an error occurs, then show some error feedback using a banner
   useEffect(() => {
@@ -101,7 +108,7 @@ function App() {
     return (
       <BlockStack spacing="loose">
         <Divider />
-        <Heading level={2}>{banner_title}</Heading>
+        <Heading level={2}>{bannerTitle}</Heading>
         <BlockStack spacing="loose">
           <InlineLayout
             spacing="base"
@@ -144,7 +151,7 @@ function App() {
   return (
     <BlockStack spacing="loose">
       <Divider />
-      <Heading level={2}>{banner_title}</Heading>
+      <Heading level={2}>{bannerTitle}</Heading>
       <BlockStack spacing="loose">
         <InlineLayout
           spacing="base"

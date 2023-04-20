@@ -13,7 +13,7 @@ query Input {
     }
   }
   discountNode {
-    metafield(namespace: "$app:free-gift-discount", key: "function-configuration") {
+    metafield(namespace: "$app:free-gift", key: "function-configuration") {
       value
     }
   }

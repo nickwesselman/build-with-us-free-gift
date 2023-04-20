@@ -28,7 +28,7 @@ import {
 
 import { useAuthenticatedFetch } from "../../../hooks";
 import { VariantPicker } from "../../../components/VariantPicker";
-import metafields from "../../../../metafields";
+import metafields, { shopMetafield } from "../../../../metafields";
 import { useState } from "react";
 
 const todaysDate = new Date();
@@ -83,6 +83,18 @@ export default function DiscountNew() {
       endDate: useField(null),
     },
     onSubmit: async (form) => {
+      if (!offeredProductId || !freeProductId) {
+        return { status: "fail", errors: [{
+          message: "You must select an offered product and a free product."
+        }]};
+      }
+
+      if (offeredProductId == freeProductId) {
+        return { status: "fail", errors: [{
+          message: "Offered product and free product must be different."
+        }]};
+      }
+
       const discount = {
         functionId,
         combinesWith: form.combinesWith,
@@ -101,9 +113,29 @@ export default function DiscountNew() {
         ],
       };
 
-      let response;
+      let shopInfo = await (await authenticatedFetch("/api/shop")).json();
+      let shopMetafieldRequest = authenticatedFetch("/api/metafields/set", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          metafields: [
+            {
+              ownerId: shopInfo.data.shop.id,
+              namespace: shopMetafield.namespace,
+              key: shopMetafield.key,
+              value: JSON.stringify({
+                offeredProductId,
+                freeProductId
+              }),
+              type: "json"
+            }
+          ],
+        }),
+      });
+
+      let discountRequest;
       if (form.discountMethod === DiscountMethod.Automatic) {
-        response = await authenticatedFetch("/api/discounts/automatic", {
+        discountRequest = authenticatedFetch("/api/discounts/automatic", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -114,7 +146,7 @@ export default function DiscountNew() {
           }),
         });
       } else {
-        response = await authenticatedFetch("/api/discounts/code", {
+        discountRequest = authenticatedFetch("/api/discounts/code", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -127,12 +159,13 @@ export default function DiscountNew() {
         });
       }
 
-      const {
-        errors, // errors like missing scope access
-        data
-      } = await response.json();
-
-      const remoteErrors = errors || data?.discountCreate?.userErrors;
+      const responses = await Promise.all([discountRequest, shopMetafieldRequest])
+        .then((results) => Promise.all(results.map((res) => res.json())));
+      
+      // check for any errors or user errors
+      const errors = responses.flatMap((res) => res.errors);
+      const userErrors = responses.flatMap((res) => res.data?.discountCreate?.userErrors ?? res.data?.metafieldsSet?.userErrors);
+      const remoteErrors = (errors || userErrors).filter(Boolean);
 
       if (remoteErrors?.length > 0) {
         return { status: "fail", errors: remoteErrors };

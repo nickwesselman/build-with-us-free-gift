@@ -134,6 +134,25 @@ mutation DeleteDiscount($id: ID!) {
 }
 `;
 
+const GET_SHOP_QUERY = `
+query {
+	shop {
+		id
+	}
+}
+`;
+
+const SET_METAFIELDS_MUTATION = `
+mutation SetMetafields($metafields: [MetafieldsSetInput!]!) {
+  metafieldsSet(metafields: $metafields) {
+    userErrors {
+      field
+      message
+    }
+  }
+}
+`;
+
 const PORT = parseInt(process.env.BACKEND_PORT || process.env.PORT, 10);
 
 const STATIC_PATH =
@@ -163,7 +182,7 @@ app.use("/api/*", shopify.validateAuthenticatedSession());
 app.use(express.json());
 
 
-const runDiscountMutation = async (req, res, mutation) => {
+const runGraphql = async (req, res, mutation) => {
   const graphqlClient = new shopify.api.clients.Graphql({
     session: res.locals.shopify.session
   });
@@ -187,11 +206,11 @@ const runDiscountMutation = async (req, res, mutation) => {
 };
 
 app.post("/api/discounts/code", async (req, res) => {
-  await runDiscountMutation(req, res, CREATE_CODE_MUTATION);
+  await runGraphql(req, res, CREATE_CODE_MUTATION);
 });
 
 app.post("/api/discounts/automatic", async (req, res) => {
-  await runDiscountMutation(req, res, CREATE_AUTOMATIC_MUTATION);
+  await runGraphql(req, res, CREATE_AUTOMATIC_MUTATION);
 });
 
 function idToGid(resource, id) {
@@ -203,31 +222,39 @@ app.get("/api/discounts/:discountId", async (req, res) => {
     id: idToGid("DiscountNode", req.params.discountId),
   };
 
-  await runDiscountMutation(req, res, GET_DISCOUNT_QUERY);
+  await runGraphql(req, res, GET_DISCOUNT_QUERY);
 });
 
 app.post("/api/discounts/automatic/:discountId", async (req, res) => {
   req.body.id = idToGid("DiscountAutomaticApp", req.params.discountId);
 
-  await runDiscountMutation(req, res, UPDATE_AUTOMATIC_MUTATION);
+  await runGraphql(req, res, UPDATE_AUTOMATIC_MUTATION);
 });
 
 app.post("/api/discounts/code/:discountId", async (req, res) => {
   req.body.id = idToGid("DiscountCodeApp", req.params.discountId);
 
-  await runDiscountMutation(req, res, UPDATE_CODE_MUTATION);
+  await runGraphql(req, res, UPDATE_CODE_MUTATION);
 });
 
 app.delete("/api/discounts/automatic/:discountId", async (req, res) => {
   req.body.id = idToGid("DiscountAutomaticApp", req.params.discountId);
 
-  await runDiscountMutation(req, res, DELETE_AUTOMATIC_MUTATION);
+  await runGraphql(req, res, DELETE_AUTOMATIC_MUTATION);
 });
 
 app.delete("/api/discounts/code/:discountId", async (req, res) => {
   req.body.id = idToGid("DiscountCodeApp", req.params.discountId);
 
-  await runDiscountMutation(req, res, DELETE_CODE_MUTATION);
+  await runGraphql(req, res, DELETE_CODE_MUTATION);
+});
+
+app.get("/api/shop", async (req, res) => {
+  await runGraphql(req, res, GET_SHOP_QUERY);
+});
+
+app.post("/api/metafields/set", async (req, res) => {
+  await runGraphql(req, res, SET_METAFIELDS_MUTATION);
 });
 
 app.get("/api/products/count", async (_req, res) => {

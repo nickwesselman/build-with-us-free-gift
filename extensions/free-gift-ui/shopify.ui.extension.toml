@@ -8,21 +8,13 @@ extension_points = [
 [capabilities]
 api_access = true
 
+[[metafields]]
+namespace = "free-gift"
+key = "products"
+
 [settings]
   [[settings.fields]]
   key = "banner_title"
   type = "single_line_text_field"
   name = "Banner title"
   description = "Enter a title for the banner"
-
-  [[settings.fields]]
-  key = "offer_product"
-  type = "variant_reference"
-  name = "Offered product"
-  description = "Select the product that will be offered"
-
-  [[settings.fields]]
-  key = "free_product"
-  type = "variant_reference"
-  name = "Free product"
-  description = "Select the free product that will added. (Note: You must also configure the related discount.)"
